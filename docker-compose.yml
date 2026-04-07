@@ -1,0 +1,37 @@
+services:
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "8828:8000"
+    depends_on:
+      - db
+
+  frontend:
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "3323:3000"
+    depends_on:
+      - backend
+
+  db:
+    image: postgres:17
+    restart: always
+    environment:
+      POSTGRES_DB: mydb
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    ports:
+      - "5525:5432"
+
+volumes:
+  pg_data:

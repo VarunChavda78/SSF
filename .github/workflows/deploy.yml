@@ -1,0 +1,31 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Deploy to Server
+        run: |
+          ssh -o StrictHostKeyChecking=no devuser@192.168.0.111 << 'EOF'
+            cd /mnt/data/VANR-Staging/VANR-FE
+
+            git checkout staging
+            git pull origin staging
+
+            docker compose -p vanr_fe_staging -f docker-compose.staging.yml down
+            docker compose -p vanr_fe_staging -f docker-compose.staging.yml up -d --build
+          EOF
