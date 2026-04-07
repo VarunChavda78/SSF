@@ -21,7 +21,7 @@ jobs:
       - name: Deploy to Server
         run: |
           ssh -o StrictHostKeyChecking=no ubuntu@54.163.13.122 << 'EOF'
-            cd /mnt/data/varun/alpha/SSF
+            cd SSF
 
             git checkout main
             git pull origin main
