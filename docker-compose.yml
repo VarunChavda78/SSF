@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     restart: always
     ports:
-      - "8828:8000"
+      - "8829:8000"
     depends_on:
       - db
 
