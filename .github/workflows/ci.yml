@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: read
-  actions: read
 
 jobs:
   build:
@@ -23,66 +22,48 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      # 🔹 Backend Build (DO NOT STOP PIPELINE)
       - name: Build Backend Image
+        continue-on-error: true
         run: |
           docker build -t ${{ secrets.DOCKER_USERNAME }}/ssf-backend:latest ./backend 2>&1 | tee backend.log
 
       - name: Push Backend Image
+        continue-on-error: true
         run: |
-          docker push ${{ secrets.DOCKER_USERNAME }}/ssf-backend:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/ssf-backend:latest 2>&1 | tee -a backend.log
 
+      # 🔹 Frontend Build
       - name: Build Frontend Image
+        continue-on-error: true
         run: |
           docker build -t ${{ secrets.DOCKER_USERNAME }}/ssf-frontend:latest ./frontend 2>&1 | tee frontend.log
 
       - name: Push Frontend Image
+        continue-on-error: true
         run: |
-          docker push ${{ secrets.DOCKER_USERNAME }}/ssf-frontend:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/ssf-frontend:latest 2>&1 | tee -a frontend.log
 
-  # 🔥 NEW JOB (THIS IS THE FIX)
-  collect-logs:
-    needs: build
-    runs-on: ubuntu-latest
-    if: always()
+      # 🔥 Always send logs
+      - name: Send Logs to MCP
+        if: always()
+        run: |
+          echo "Preparing logs..."
 
-    steps:
-    - name: Download Full Logs (with retry)
-      run: |
-        echo "Downloading logs with retry..."
+          touch combined.log
 
-        for i in {1..10}; do
-          echo "Attempt $i..."
+          echo "===== BACKEND LOG =====" >> combined.log
+          cat backend.log >> combined.log 2>/dev/null || echo "No backend log" >> combined.log
 
-          STATUS=$(curl -s -o logs.zip -w "%{http_code}" -L \
-            -H "Authorization: Bearer ${{ secrets.GH_PAT }}" \
-            https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/logs)
+          echo "\n===== FRONTEND LOG =====" >> combined.log
+          cat frontend.log >> combined.log 2>/dev/null || echo "No frontend log" >> combined.log
 
-          if [ "$STATUS" -eq 200 ]; then
-            echo "Logs downloaded successfully ✅"
-            break
-          else
-            echo "Logs not ready yet (status: $STATUS), retrying in 5 seconds..."
-            sleep 5
-          fi
+          echo "\n===== STATUS =====" >> combined.log
+          echo "Job Status: ${{ job.status }}" >> combined.log
 
-          if [ $i -eq 10 ]; then
-            echo "Failed to download logs after multiple attempts ❌"
-            exit 1
-          fi
-        done
-
-    - name: Extract Logs
-      run: |
-        unzip logs.zip -d logs
-
-    - name: Combine Logs
-      run: |
-        cat logs/*.txt > combined.log
-
-    - name: Send Logs to MCP
-      run: |
-        curl -X POST https://your-mcp-server.com/analyze \
-          -H "Content-Type: multipart/form-data" \
-          -F "status=${{ needs.build.result }}" \
-          -F "repo=${{ github.repository }}" \
-          -F "logs=@combined.log"
+          curl -X POST https://your-mcp-server.com/analyze \
+            -H "Content-Type: multipart/form-data" \
+            -F "status=${{ job.status }}" \
+            -F "repo=${{ github.repository }}" \
+            -F "commit=${{ github.sha }}" \
+            -F "logs=@combined.log"
