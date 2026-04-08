@@ -54,7 +54,7 @@ jobs:
           echo "Attempt $i..."
 
           STATUS=$(curl -s -o logs.zip -w "%{http_code}" -L \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Authorization: Bearer ${{ secrets.GH_PAT }}" \
             https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/logs)
 
           if [ "$STATUS" -eq 200 ]; then
