@@ -14,93 +14,64 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 🔹 Checkout
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 🔹 Docker Login
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # 🔹 Generate Tag
       - name: Generate tag
         id: tag
         run: |
           echo "TAG=1.0.${{ github.run_number }}" >> $GITHUB_OUTPUT
 
-      # 🔹 Backend Build (capture logs)
       - name: Build Backend Image
         run: |
           docker build -t ${{ secrets.DOCKER_USERNAME }}/ssf-backend:${{ steps.tag.outputs.TAG }} ./backend 2>&1 | tee backend.log
 
       - name: Push Backend Image
         run: |
-          docker push ${{ secrets.DOCKER_USERNAME }}/ssf-backend:${{ steps.tag.outputs.TAG }} 2>&1 | tee -a backend.log
+          docker push ${{ secrets.DOCKER_USERNAME }}/ssf-backend:${{ steps.tag.outputs.TAG }}
 
-      # 🔹 Frontend Build (capture logs)
       - name: Build Frontend Image
         run: |
           docker build -t ${{ secrets.DOCKER_USERNAME }}/ssf-frontend:${{ steps.tag.outputs.TAG }} ./frontend 2>&1 | tee frontend.log
 
       - name: Push Frontend Image
         run: |
-          docker push ${{ secrets.DOCKER_USERNAME }}/ssf-frontend:${{ steps.tag.outputs.TAG }} 2>&1 | tee -a frontend.log
+          docker push ${{ secrets.DOCKER_USERNAME }}/ssf-frontend:${{ steps.tag.outputs.TAG }}
 
-      # 🔥 STEP 1: Download FULL GitHub Logs
-      - name: Download Full Workflow Logs
-        if: always()
+  # 🔥 NEW JOB (THIS IS THE FIX)
+  collect-logs:
+    needs: build
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Download Full Logs
         run: |
-          echo "Downloading full logs..."
+          echo "Downloading logs after job completion..."
 
           curl -L --fail \
-            -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
-            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/logs \
             -o logs.zip
 
-      - name: Debug logs.zip
-        if: always()
-        run: |
-          file logs.zip
-          head -n 20 logs.zip || true
-
-      # 🔥 STEP 2: Extract Logs
       - name: Extract Logs
-        if: always()
         run: |
-          mkdir -p logs
-          unzip logs.zip -d logs || echo "Unzip failed, skipping..."
+          unzip logs.zip -d logs
 
-      # 🔥 STEP 3: Combine Everything
-      - name: Combine All Logs
-        if: always()
+      - name: Combine Logs
         run: |
-          touch combined_github_logs.txt
+          cat logs/*.txt > combined.log
 
-          if ls logs/*.txt 1> /dev/null 2>&1; then
-            cat logs/*.txt >> combined_github_logs.txt
-          else
-            echo "No GitHub logs found" >> combined_github_logs.txt
-          fi
-
-          echo "\n===== BACKEND LOG =====\n" >> combined_github_logs.txt
-          cat backend.log >> combined_github_logs.txt 2>/dev/null || true
-
-          echo "\n===== FRONTEND LOG =====\n" >> combined_github_logs.txt
-          cat frontend.log >> combined_github_logs.txt 2>/dev/null || true
-
-      # 🔥 STEP 4: Send to MCP Server
-      - name: Send Logs to MCP Server
-        if: always()
+      - name: Send Logs to MCP
         run: |
           curl -X POST https://your-mcp-server.com/analyze \
             -H "Content-Type: multipart/form-data" \
-            -F "status=${{ job.status }}" \
+            -F "status=${{ needs.build.result }}" \
             -F "repo=${{ github.repository }}" \
-            -F "branch=${{ github.ref_name }}" \
-            -F "commit=${{ github.sha }}" \
-            -F "run_id=${{ github.run_id }}" \
-            -F "logs=@combined_github_logs.txt"
+            -F "logs=@combined.log"
