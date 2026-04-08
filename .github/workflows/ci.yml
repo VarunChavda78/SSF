@@ -1,4 +1,4 @@
-name: Build and Push Docker Image
+name: Build and Push Docker Images
 
 on:
   push:
@@ -24,15 +24,20 @@ jobs:
         run: |
           echo "TAG=1.0.${{ github.run_number }}" >> $GITHUB_OUTPUT
 
-      - name: Build Docker image
+      # 🔹 Backend Image
+      - name: Build Backend Image
         run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/ssf:${{ steps.tag.outputs.TAG }} .
-      - name: Push Docker image
-        run: |
-          docker push ${{ secrets.DOCKER_USERNAME }}/ssf:${{ steps.tag.outputs.TAG }}
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/ssf-backend:${{ steps.tag.outputs.TAG }} ./backend
 
-      - name: Tag as latest
+      - name: Push Backend Image
         run: |
-          docker tag ${{ secrets.DOCKER_USERNAME }}/ssf:${{ steps.tag.outputs.TAG }} \
-                     ${{ secrets.DOCKER_USERNAME }}/ssf:latest
-          docker push ${{ secrets.DOCKER_USERNAME }}/ssf:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/ssf-backend:${{ steps.tag.outputs.TAG }}
+
+      # 🔹 Frontend Image
+      - name: Build Frontend Image
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/ssf-frontend:${{ steps.tag.outputs.TAG }} ./frontend
+
+      - name: Push Frontend Image
+        run: |
+          docker push ${{ secrets.DOCKER_USERNAME }}/ssf-frontend:${{ steps.tag.outputs.TAG }}
