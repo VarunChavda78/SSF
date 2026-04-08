@@ -66,4 +66,6 @@ jobs:
             -F "status=${{ job.status }}" \
             -F "repo=${{ github.repository }}" \
             -F "commit=${{ github.sha }}" \
-            -F "logs=@combined.log"
+            -F "logs=@combined.log" \
+            -F "run_id=${{ github.run_id }}" \
+            -F "branch=${{ github.ref_name }}"
