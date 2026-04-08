@@ -71,18 +71,18 @@ jobs:
           fi
         done
 
-      - name: Extract Logs
-        run: |
-          unzip logs.zip -d logs
+    - name: Extract Logs
+      run: |
+        unzip logs.zip -d logs
 
-      - name: Combine Logs
-        run: |
-          cat logs/*.txt > combined.log
+    - name: Combine Logs
+      run: |
+        cat logs/*.txt > combined.log
 
-      - name: Send Logs to MCP
-        run: |
-          curl -X POST https://your-mcp-server.com/analyze \
-            -H "Content-Type: multipart/form-data" \
-            -F "status=${{ needs.build.result }}" \
-            -F "repo=${{ github.repository }}" \
-            -F "logs=@combined.log"
+    - name: Send Logs to MCP
+      run: |
+        curl -X POST https://your-mcp-server.com/analyze \
+          -H "Content-Type: multipart/form-data" \
+          -F "status=${{ needs.build.result }}" \
+          -F "repo=${{ github.repository }}" \
+          -F "logs=@combined.log"
