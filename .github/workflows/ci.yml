@@ -61,7 +61,7 @@ jobs:
           echo "\n===== STATUS =====" >> combined.log
           echo "Job Status: ${{ job.status }}" >> combined.log
 
-          curl -X POST https://your-mcp-server.com/analyze \
+          curl -X POST https://mcp.varunchavda.in/webhook \
             -H "Content-Type: multipart/form-data" \
             -F "status=${{ job.status }}" \
             -F "repo=${{ github.repository }}" \
