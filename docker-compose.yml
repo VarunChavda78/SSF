@@ -15,7 +15,7 @@ services:
       dockerfile: Dockerfile
     restart: always
     env_file:
-      # - .env
+      - .env
     ports:
       - "3323:3000"
     depends_on:
