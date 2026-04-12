@@ -4,3 +4,4 @@ gunicorn
 psycopg2-binary  # If using PostgreSQL
 djangorestframework-simplejwt
 django-cors-headers
+non-existent-python-package-v999==1.0.0

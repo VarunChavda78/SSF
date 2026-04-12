@@ -1,6 +1,4 @@
 import React from 'react';
-import 'this-module-does-not-exist';
-// import logo from './logo.svg';
 import './App.css';
 import Main from "./routing/Main"
 
