@@ -1,103 +1,83 @@
-# SSF - Full-Stack Freelancing Platform
+# Skill Spring Freelance (SSF) - DevOps & Infrastructure
 
-SSF (Scalable Services for Freelancers) is a robust, production-ready web application designed to connect clients with freelancers. Built with a modern tech stack and containerized for seamless deployment, SSF offers a streamlined experience for posting projects, submitting proposals, and managing collaborations.
-
-## 🚀 Tech Stack
-
-### Backend
-- **Framework**: [Django](https://www.djangoproject.com/) & [Django REST Framework](https://www.django-rest-framework.org/)
-- **Authentication**: JWT (SimpleJWT)
-- **Database**: PostgreSQL (v17)
-- **Server**: Gunicorn
-- **Language**: Python
-
-### Frontend
-- **Library**: [React (v18)](https://react.dev/)
-- **Styling**: [Bootstrap (v5)](https://getbootstrap.com/)
-- **API Client**: Axios
-- **State/Routing**: React Router DOM (v6)
-
-### Infrastructure
-- **Containerization**: Docker & Docker Compose
-- **CI/CD**: GitHub Actions
+This repository contains the full-stack **Skill Spring Freelance (SSF)** platform, engineered with a focus on containerization, automated CI/CD workflows, and scalable infrastructure.
 
 ---
 
-## ✨ Key Features
+## 🏗️ System Architecture
 
-### For Clients
-- **User Registration & Login**: Secure account management.
-- **Project Posting**: Define project requirements, budget, and department.
-- **Project Management**: View, update, and delete your project listings.
-- **Proposal Review**: Browse and manage bids from freelancers.
-- **Search & Filter**: Find the right talent or project easily.
+The SSF system is built on a containerized 3-tier architecture:
 
-### For Freelancers
-- **Browse Projects**: View all open project requirements on the dashboard.
-- **Apply for Projects**: Submit detailed proposals with bid amounts.
-- **Track Applications**: Monitor all applied projects from a dedicated dashboard.
-- **Search & Filter**: Discover projects based on specific criteria.
+1.  **Frontend**: React-based SPA served through a Node.js environment.
+2.  **Backend**: Django REST Framework (DRF) handling business logic and API endpoints.
+3.  **Database**: PostgreSQL (v17) for persistent data storage.
+
+All services communicate over a private Docker bridge network, with specific ports exposed for external access and monitoring.
 
 ---
 
-## 🏗️ Project Structure
+## 🐳 Containerization
 
-```text
-SSF/
-├── backend/            # Django REST API
-│   ├── api/            # Main application logic (Models, Views, Serializers)
-│   ├── Freelancing_Project/ # Project settings and configuration
-│   ├── Dockerfile      # Backend container definition
-│   └── requirements.txt # Python dependencies
-├── frontend/           # React Application
-│   ├── src/            # React components and logic
-│   ├── Dockerfile      # Frontend container definition
-│   └── package.json    # Node.js dependencies
-├── docker-compose.yml  # Multi-container orchestration
-└── .github/workflows/  # CI/CD pipeline configurations
-```
+The project is fully dockerized to ensure environment parity across development, staging, and production.
+
+### Docker Images
+- **Backend**: Built using `python:3.9` base image. It handles API requests on port `8000`.
+- **Frontend**: Built using `node:18` base image. It serves the React application on port `3000`.
+
+### Orchestration (Docker Compose)
+The services are managed via `docker-compose.yml`, which handles:
+- **Service Dependencies**: Ensuring the database starts before the backend, and the backend before the frontend.
+- **Persistent Storage**: Utilizing Docker volumes (`pg_data`) for PostgreSQL data persistence.
+- **Port Mapping**:
+    - **Frontend**: `3323:3000`
+    - **Backend**: `8829:8000`
+    - **PostgreSQL**: `5525:5432`
 
 ---
 
-## 🛠️ Getting Started
+## 🚀 CI/CD Pipeline (GitHub Actions)
+
+The repository includes a robust CI/CD pipeline defined in `.github/workflows/ci.yml`.
+
+### Workflow Steps:
+1.  **Build**: Automatically triggers on pushes to the `main` branch.
+2.  **Docker Hub Integration**: Authenticates and pushes multi-service images to Docker Hub.
+3.  **Automated Logging**: Captures build and push logs for both frontend and backend services.
+4.  **MCP Webhook Integration**: On completion (success or failure), the pipeline aggregates logs and sends a comprehensive report to a custom MCP (Model Context Protocol) endpoint (`https://mcp.varunchavda.in/webhook`). This provides real-time visibility into the deployment status.
+
+---
+
+## 🛠️ Infrastructure Setup
 
 ### Prerequisites
-- [Docker](https://docs.docker.com/get-docker/)
-- [Docker Compose](https://docs.docker.com/compose/install/)
+- Docker & Docker Compose
+- GitHub Secrets (for CI/CD):
+    - `DOCKER_USERNAME`
+    - `DOCKER_PASSWORD`
 
-### Local Development (Docker)
-
-1. **Clone the Repository**
-   ```bash
-   git clone <repository-url>
-   cd SSF
-   ```
-
-2. **Configure Environment Variables**
-   Create a `.env` file in the root directory (refer to `.env.example` if available).
-
-3. **Start the Services**
-   ```bash
-   docker-compose up --build
-   ```
-
-4. **Access the Application**
-   - **Frontend**: [http://localhost:3323](http://localhost:3323)
-   - **Backend API**: [http://localhost:8829](http://localhost:8829)
-   - **Database (Postgres)**: `localhost:5525`
+### Local Deployment
+1.  **Clone and Configure**:
+    ```bash
+    git clone <repo-url>
+    cd SSF
+    ```
+2.  **Environment Variables**: Create a `.env` in the root:
+    ```env
+    REACT_APP_API_URL=http://localhost:8829/api
+    ```
+3.  **Launch Services**:
+    ```bash
+    docker-compose up --build -d
+    ```
 
 ---
 
-## 🔐 API Endpoints
-
-- `POST /api/sign-up/` - Register a new user.
-- `POST /api/login/` - Authenticate user and receive JWT.
-- `GET/POST /api/projects/` - List all projects or create a new one.
-- `GET/PUT/DELETE /api/projects/<id>/` - Manage a specific project.
-- `GET/POST /api/proposals/` - List or submit project proposals.
-- `GET /api/getuser/` - Fetch current user profile details.
+## 📊 Monitoring & Maintenance
+- **Logs**: Access service logs via `docker-compose logs -f`.
+- **Database Backups**: Managed through persistent volumes in `pg_data`.
+- **Pipeline Visibility**: Status and logs are pushed to the MCP dashboard for every commit on `main`.
 
 ---
 
 ## 📜 License
-This project is licensed under the MIT License.
+This project's infrastructure and code are licensed under the MIT License.
