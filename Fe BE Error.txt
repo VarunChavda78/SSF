@@ -1,0 +1,17 @@
+---> Frontend Error
+
+package.json
+	    "non-existent-package-v999": "1.0.0"
+App.js
+	import 'this-module-does-not-exist';
+
+
+
+
+
+---> Backend Error
+
+requirement.txt
+	non-existent-python-package-v999==1.0.0
+manage.py
+	This is an intentional python syntax error !!!
